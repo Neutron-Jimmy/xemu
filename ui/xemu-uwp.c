@@ -36,6 +36,7 @@
 #include <windows.ui.core.h>
 #include <windows.storage.h>
 #include <stdio.h>
+#include <io.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
@@ -651,10 +652,15 @@ int main(int argc, char **argv)
     RoInitialize(RO_INIT_MULTITHREADED);
     find_folders();
 
-    char p[MAX_PATH + 32];
+    char p[MAX_PATH + 32], prev[MAX_PATH + 32];
     snprintf(p, sizeof p, "%s\\xemu.log", local_dir);
+    snprintf(prev, sizeof prev, "%s\\xemu.prev.log", local_dir);
+    MoveFileExA(p, prev, MOVEFILE_REPLACE_EXISTING);  /* keep the last session's log: it may be the one that went wrong */
+    /* One file, one descriptor: stdout and stderr each freopen'd on the log kept separate file positions and wrote
+       over each other's lines (the launch command line came out cut in half). */
     freopen(p, "w", stderr);
-    freopen(p, "a", stdout);
+    freopen(p, "a", stdout);                     /* gives stdout a descriptor (a GUI app starts without one) */
+    _dup2(_fileno(stderr), _fileno(stdout));     /* ...then makes it stderr's: one shared file position */
     setvbuf(stderr, NULL, _IONBF, 0);
     setvbuf(stdout, NULL, _IONBF, 0);
     AddVectoredExceptionHandler(0, last_word);

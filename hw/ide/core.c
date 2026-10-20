@@ -1691,7 +1691,20 @@ static bool cmd_set_features(IDEState *s, uint8_t cmd)
         s->io8 = !(s->feature & 0x80);
         return true;
     case 0x02: /* write cache enable */
+#ifdef XEMU_UWP
+        /*
+         * The Xbox (UWP) build keeps the hard disk write-through on the host
+         * (system/vl.c): the console kills the app, and with a host write
+         * cache qcow2's map of newly written data stays in memory and is
+         * lost, which damaged saves. The Xbox kernel has not been seen to
+         * send this command, but a guest that did would silently undo the
+         * fix. So the guest is told its cache is on (identify word 85) and
+         * the hard disk stays write-through.
+         */
+        blk_set_enable_write_cache(s->blk, s->drive_kind != IDE_HD);
+#else
         blk_set_enable_write_cache(s->blk, true);
+#endif
         identify_data = (uint16_t *)s->identify_data;
         put_le16(identify_data + 85, (1 << 14) | (1 << 5) | 1);
         return true;
@@ -2883,7 +2896,13 @@ static int ide_drive_post_load(void *opaque, int version_id)
     IDEState *s = opaque;
 
     if (s->blk && s->identify_set) {
+#ifdef XEMU_UWP
+        /* restoring a snapshot restores the guest's choice; the hard disk stays write-through (cmd_set_features) */
+        blk_set_enable_write_cache(s->blk, s->drive_kind != IDE_HD &&
+                                   !!(s->identify_data[85] & (1 << 5)));
+#else
         blk_set_enable_write_cache(s->blk, !!(s->identify_data[85] & (1 << 5)));
+#endif
     }
     return 0;
 }

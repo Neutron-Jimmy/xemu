@@ -3067,9 +3067,32 @@ void qemu_init(int argc, char **argv)
         } else {
             fake_argv[fake_argc++] = strdup("-drive");
             char *escaped_hdd_path = strdup_double_commas(hdd_path);
-            fake_argv[fake_argc++] = g_strdup_printf("index=0,media=disk,file=%s%s",
+            /*
+             * XEMU_UWP: the console ends an app by killing it. qcow2 keeps
+             * its cluster map (L2 and refcount tables) for newly written
+             * data in this process's memory until a flush, and the Xbox
+             * kernel never sends FLUSH CACHE, so after a kill a save's data
+             * was in the file but unmapped: "Damaged Game". The hard disk
+             * is therefore write-through: the qcow2 layer writes its map out
+             * after every guest write.
+             *
+             * no-flush goes on the file layer only (file.cache.no-flush), to
+             * skip FlushFileBuffers, which only guards against power loss:
+             * the OS keeps what a killed process wrote. On the qcow2 layer
+             * it must stay off: block/io.c drops a write's FUA flag on a
+             * no-flush node, which turns write-through off entirely
+             * (measured: with cache.no-flush=on the map was never written).
+             * hw/ide/core.c keeps the guest from turning the cache back on.
+             */
+#ifdef XEMU_UWP
+            const char *hdd_cache = ",cache=writethrough,file.cache.no-flush=on";
+#else
+            const char *hdd_cache = "";
+#endif
+            fake_argv[fake_argc++] = g_strdup_printf("index=0,media=disk,file=%s%s%s",
                 escaped_hdd_path,
-                strlen(escaped_hdd_path) > 0 ? ",locked=on" : "");
+                strlen(escaped_hdd_path) > 0 ? ",locked=on" : "",
+                hdd_cache);
             free(escaped_hdd_path);
         }
     }

@@ -579,6 +579,62 @@ static void probe_i(void)
     }
 }
 
+/* J: does a write past the end of a file stick? QEMU's file-win32 driver writes with WriteFile at an OVERLAPPED
+   offset; qcow2 grows the image that way for every newly written cluster. A save written to D:\DevelopmentFiles
+   came back as zeros after a restart while overwritten clusters survived, and the image never grew. Same pattern
+   here, on D:\DevelopmentFiles and on LocalState: write at 0, write 1 MB past the end, check the size while open,
+   close, reopen, check the size and the data. The test file is deleted afterwards. */
+static void probe_j_one(const WCHAR *dir)
+{
+    WCHAR path[MAX_PATH];
+    swprintf(path, MAX_PATH, L"%ls\\xemu-probe-extend.bin", dir);
+    CreateDirectoryW(dir, NULL);
+    HANDLE h = CreateFileW(path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, 0, NULL);
+    if (h == INVALID_HANDLE_VALUE) {
+        say("   %ls: create FAILED (error %lu)", path, GetLastError());
+        return;
+    }
+    static unsigned char a[4096], b[4096], r[4096];
+    memset(a, 0x5A, sizeof a);
+    for (int i = 0; i < 4096; i++)
+        b[i] = (unsigned char)(i * 7 + 1);
+    DWORD n = 0;
+    OVERLAPPED ov = {0};
+    BOOL ok1 = WriteFile(h, a, sizeof a, &n, &ov);
+    DWORD n1 = n, e1 = ok1 ? 0 : GetLastError();
+    memset(&ov, 0, sizeof ov);
+    ov.Offset = 1 << 20;
+    BOOL ok2 = WriteFile(h, b, sizeof b, &n, &ov);
+    DWORD n2 = n, e2 = ok2 ? 0 : GetLastError();
+    LARGE_INTEGER sz_open = {0};
+    GetFileSizeEx(h, &sz_open);
+    CloseHandle(h);
+    h = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+    LARGE_INTEGER sz_re = {0};
+    GetFileSizeEx(h, &sz_re);
+    memset(&ov, 0, sizeof ov);
+    ov.Offset = 1 << 20;
+    memset(r, 0, sizeof r);
+    BOOL ok3 = ReadFile(h, r, sizeof r, &n, &ov);
+    DWORD n3 = n;
+    CloseHandle(h);
+    say("   %ls: write@0 %s (%lu bytes, err %lu); write@1MB %s (%lu bytes, err %lu); size open %lld, reopened %lld;"
+        " read@1MB %s %lu bytes, data %s",
+        dir, ok1 ? "ok" : "FAILED", n1, e1, ok2 ? "ok" : "FAILED", n2, e2, sz_open.QuadPart, sz_re.QuadPart,
+        ok3 ? "ok" : "FAILED", n3, memcmp(r, b, sizeof b) ? "WRONG" : "matches");
+    DeleteFileW(path);
+}
+
+static void probe_j(void)
+{
+    say("J  writing past the end of a file (how qcow2 grows an image)");
+    probe_j_one(L"D:\\DevelopmentFiles\\xemu-probe");
+    WCHAR ls[MAX_PATH];
+    MultiByteToWideChar(CP_ACP, 0, local_dir, -1, ls, MAX_PATH);
+    probe_j_one(ls);
+    RemoveDirectoryW(L"D:\\DevelopmentFiles\\xemu-probe");
+}
+
 static void run_probes(void)
 {
     char path[MAX_PATH + 16];
@@ -594,6 +650,7 @@ static void run_probes(void)
     probe_g();
     probe_h();
     probe_i();
+    probe_j();
     probe_a();                                  /* last: the likeliest to crash outright */
     say("jitprobe: done");
 }

@@ -18,6 +18,8 @@ Everything in the table was measured on the console with `probe/jitprobe.c` befo
 | Files outside the app's folders are off limits | `removableStorage` + `broadFileSystemAccess` in the manifest. With them, the plain Win32 file calls read `D:\DevelopmentFiles`. |
 | XInput delivers no pads to a UWP app | SDL's Windows.Gaming.Input backend |
 | `GetDiskFreeSpace` fails in the app container | `block/file-win32.c` checks its result (it used to use stack garbage as the sector size and assert) |
+| The console kills apps; qcow2 keeps its map of newly written data in memory until a flush, and the Xbox never flushes. Saves came back "Damaged Game" after a force quit. | The HDD is write-through: `cache=writethrough,file.cache.no-flush=on` (`system/vl.c`), and `hw/ide/core.c` won't let the guest turn the cache back on. Not `cache.no-flush=on` on the qcow2 layer: QEMU drops the FUA flag on a no-flush node, which silently turns write-through off. |
+| Closing xemu mid-game cuts the guest's power, leaving the game cache half-written: "dirty or damaged disc" | The X/Y/Z cache partitions are formatted at every boot and reset (`ui/xemu-hdd-cache.c`, Settings → System) |
 | 4 of xemu's 872 imports don't exist on the console | Defined as `__imp_` pointers to stubs in `ui/xemu-uwp.c` |
 | No `dxil.dll` (Mesa's d3d12 driver signs shaders with it) | Shipped in the package, from the Windows SDK Redist |
 | The B button sends a UWP app home | `BackRequested` is handled |
