@@ -50,6 +50,16 @@ It opens on a **Locations** page:
 - **Development Files** (`D:\DevelopmentFiles`)
 - any readable drive, such as USB storage
 
+### Settings added by this port
+
+| Setting | Where | What it does |
+|---|---|---|
+| **Clear game cache at startup** | Settings → System (on by default) | Wipes the Xbox HDD's game cache partitions (X, Y, Z) at every boot and reset. Closing xemu mid-game is like pulling a real Xbox's power: a game's cache is left half-written, and the next boot reports a "dirty or damaged" disc. Games rebuild their cache as they need it. Saves are never touched. |
+| **Show FPS** | Settings → Display → Interface | Shows the game's frame rate in the upper-left corner. |
+
+Settings are saved as soon as you change them. The console closes apps without warning, so xemu can't rely on
+saving at exit.
+
 ## Known limitations
 
 - The picture is rendered at **640x480** and scaled up by the console.
