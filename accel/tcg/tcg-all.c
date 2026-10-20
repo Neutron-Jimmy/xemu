@@ -75,7 +75,9 @@ static void tcg_accel_instance_init(Object *obj)
     TCGState *s = TCG_STATE(obj);
 
     /* If debugging enabled, default "auto on", otherwise off. */
-#if defined(CONFIG_DEBUG_TCG) && !defined(CONFIG_USER_ONLY)
+#if defined(XEMU_UWP)
+    s->splitwx_enabled = 1;  /* a UWP app cannot have RWX memory at all */
+#elif defined(CONFIG_DEBUG_TCG) && !defined(CONFIG_USER_ONLY)
     s->splitwx_enabled = -1;
 #else
     s->splitwx_enabled = 0;

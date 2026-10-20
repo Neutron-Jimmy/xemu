@@ -36,6 +36,8 @@
 
 #define DEFINE_CONFIG_TREE
 #include "xemu-config.h"
+#include <SDL3/SDL.h>
+#include "ui/xemu-uwp.h"
 
 struct config g_config;
 

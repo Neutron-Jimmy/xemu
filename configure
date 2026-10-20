@@ -1939,6 +1939,7 @@ if test "$skip_meson" = no; then
   echo "widl = [$(meson_quote $widl)]" >> $cross
   echo "windres = [$(meson_quote $windres)]" >> $cross
   echo "windmc = [$(meson_quote $windmc)]" >> $cross
+  echo "cmake = [$(meson_quote ${CMAKE-${cross_prefix}cmake})]" >> $cross
   if test "$cross_compile" = "yes"; then
     echo "[host_machine]" >> $cross
     echo "system = '$host_os'" >> $cross

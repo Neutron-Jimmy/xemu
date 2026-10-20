@@ -59,6 +59,7 @@
 #include <locale.h>
 #include <math.h>
 #include <SDL3/SDL.h>
+#include "ui/xemu-uwp.h"
 
 #ifdef _WIN32
 #include "xui/win32-dxgi-present.h"
@@ -1340,13 +1341,19 @@ static void init_sdl_app_metadata(void)
                                "https://xemu.app");
 }
 
+#ifdef XEMU_UWP
+/* ui/xemu-uwp.c owns main: it starts the app and runs this from the view */
+#define main xemu_main
+int xemu_main(int argc, char **argv);
+#endif
+
 int main(int argc, char **argv)
 {
     QemuThread thread;
 
     setlocale(LC_NUMERIC, "C");
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(XEMU_UWP)
     if (AttachConsole(ATTACH_PARENT_PROCESS)) {
         // Launched with a console. If stdout and stderr are not associated with
         // an output stream, redirect to parent console.

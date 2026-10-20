@@ -3,6 +3,7 @@ xemu_ss.add(files(
   'animation.cc',
   'compat.cc',
   'debug.cc',
+  'file-browser.cc',
   'font-manager.cc',
   'gl-helpers.cc',
   'input-manager.cc',

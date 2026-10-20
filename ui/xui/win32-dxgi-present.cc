@@ -19,7 +19,7 @@
 
 #include "win32-dxgi-present.h"
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(XEMU_UWP)  /* the UWP build presents in ui/xemu-uwp.c */
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN

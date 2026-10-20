@@ -23,6 +23,8 @@
 
 #include "xemu-snapshots.h"
 #include "xui/gl-helpers.hh"
+#include <SDL3/SDL.h>
+#include "ui/xemu-uwp.h"
 
 static GLuint display_tex = 0;
 static bool display_flip = false;

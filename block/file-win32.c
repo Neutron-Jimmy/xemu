@@ -250,10 +250,17 @@ static void raw_probe_alignment(BlockDriverState *bs, Error **errp)
         /* try GetDiskFreeSpace too */
     }
 
-    if (s->drive_path[0]) {
+    /*
+     * Only trust the answer if the call succeeded: in a UWP app container
+     * (the Xbox build) GetDiskFreeSpace fails on the app's own LocalState
+     * drive, and BytesPerSector was left as stack garbage -- which tripped
+     * bdrv_open_driver's is_power_of_2(request_alignment) assertion.
+     */
+    if (s->drive_path[0] &&
         GetDiskFreeSpace(s->drive_path, &sectorsPerCluster,
                          &dg.Geometry.BytesPerSector,
-                         &freeClusters, &totalClusters);
+                         &freeClusters, &totalClusters) &&
+        is_power_of_2(dg.Geometry.BytesPerSector)) {
         bs->bl.request_alignment = dg.Geometry.BytesPerSector;
         return;
     }

@@ -50,6 +50,8 @@
 #include "welcome.hh"
 #include "menubar.hh"
 #include "compat.hh"
+#include "ui/xemu-uwp.h"
+#include "file-browser.hh"
 #if defined(_WIN32)
 #include "update.hh"
 #endif
@@ -317,6 +319,9 @@ void xemu_hud_update(void)
     g_scene_mgr.Draw();
     if (!first_boot_window.is_open) notification_manager.Draw();
     g_snapshot_mgr.Draw();
+#ifdef XEMU_UWP
+    g_file_browser.Draw();  // the dialogs, in-app: no native ones on the Xbox
+#endif
 
     // static bool show_demo = true;
     // if (show_demo) ImGui::ShowDemoWindow(&show_demo);

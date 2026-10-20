@@ -1679,7 +1679,7 @@ if not get_option('sdl').auto() or have_system
     sdl3_cmake_opts.add_cmake_defines({
       'SDL_CAMERA': 'OFF',
       'SDL_DISKAUDIO': 'OFF',
-      'SDL_DUMMYVIDEO': 'OFF',
+      'SDL_DUMMYVIDEO': 'ON',  # the UWP (Xbox) build runs SDL's dummy video driver
       'SDL_FRIBIDI': 'OFF',
       'SDL_GPU': 'OFF',
       'SDL_HAPTIC': 'OFF',

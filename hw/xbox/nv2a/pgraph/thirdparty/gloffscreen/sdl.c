@@ -29,6 +29,7 @@
 #include "gloffscreen.h"
 
 #include <SDL3/SDL.h>
+#include "ui/xemu-uwp.h"
 
 struct _GloContext {
     SDL_Window    *window;

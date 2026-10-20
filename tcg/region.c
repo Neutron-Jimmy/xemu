@@ -529,13 +529,73 @@ static int alloc_code_gen_buffer(size_t tb_size, int splitwx, Error **errp)
     return PROT_READ | PROT_WRITE;
 }
 #elif defined(_WIN32)
+/*
+ * split-wx on Windows: one pagefile-backed section mapped twice, a read-write
+ * view TCG writes code through and a read-execute view it runs from, at a
+ * fixed distance (tcg_splitwx_diff). A UWP app (the Xbox build, XEMU_UWP) may
+ * not hold memory that is writable and executable at once -- the ...FromApp
+ * calls refuse PAGE_EXECUTE_READWRITE -- but with the codeGeneration
+ * capability it may map an execute view of a section created
+ * PAGE_EXECUTE_READWRITE (measured on the console: probe/jitprobe.c, test C).
+ */
+#ifdef XEMU_UWP
+bool xu_jit_map_views(size_t size, void **rw, void **rx); /* ui/xemu-uwp.c */
+#endif
+
+static int alloc_code_gen_buffer_splitwx_win32(size_t size, Error **errp)
+{
+    void *buf_rw, *buf_rx;
+
+#ifdef XEMU_UWP
+    /* CreateFileMappingFromApp + MapViewOfFile3FromApp, found at run time */
+    if (!xu_jit_map_views(size, &buf_rw, &buf_rx)) {
+        error_setg(errp, "jit split-wx: the console refused the views");
+        return -1;
+    }
+#else
+    HANDLE section;
+
+    section = CreateFileMappingW(INVALID_HANDLE_VALUE, NULL,
+                                 PAGE_EXECUTE_READWRITE,
+                                 (DWORD)((uint64_t)size >> 32), (DWORD)size,
+                                 NULL);
+    if (section == NULL) {
+        error_setg_win32(errp, GetLastError(),
+                         "create %zu byte section for jit split-wx", size);
+        return -1;
+    }
+    buf_rw = MapViewOfFile(section, FILE_MAP_WRITE, 0, 0, size);
+    buf_rx = buf_rw ? MapViewOfFile(section, FILE_MAP_READ | FILE_MAP_EXECUTE,
+                                    0, 0, size)
+                    : NULL;
+    if (buf_rx == NULL) {
+        error_setg_win32(errp, GetLastError(),
+                         "map %zu byte jit split-wx views", size);
+        if (buf_rw) {
+            UnmapViewOfFile(buf_rw);
+        }
+        CloseHandle(section);
+        return -1;
+    }
+    CloseHandle(section);           /* the views keep the section alive */
+#endif
+
+    region.start_aligned = buf_rw;
+    region.total_size = size;
+    tcg_splitwx_diff = (uint8_t *)buf_rx - (uint8_t *)buf_rw;
+    return PROT_READ | PROT_WRITE;
+}
+
 static int alloc_code_gen_buffer(size_t size, int splitwx, Error **errp)
 {
     void *buf;
 
-    if (splitwx > 0) {
-        error_setg(errp, "jit split-wx not supported");
-        return -1;
+    if (splitwx) {
+        int prot = alloc_code_gen_buffer_splitwx_win32(size, errp);
+        if (prot >= 0 || splitwx > 0) {
+            return prot;
+        }
+        error_free_or_abort(errp);
     }
 
     buf = VirtualAlloc(NULL, size, MEM_RESERVE | MEM_COMMIT,

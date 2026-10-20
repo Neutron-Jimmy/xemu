@@ -81,6 +81,36 @@ static std::string NormalizeDefaultLocation(const char *default_location)
     return default_location;
 }
 
+#ifdef XEMU_UWP
+// The Xbox build has no native file dialog (no Win32 windows on the console):
+// every dialog is the in-app browser of LocalState (file-browser.cc), drawn by
+// the HUD under the main loop lock -- which is what RunOnMainThread gives the
+// native dialogs' callbacks, so the callbacks run as they would there.
+#include "file-browser.hh"
+
+void ShowOpenFileDialog(const SDL_DialogFileFilter *filters, int nfilters,
+                        const char *default_location,
+                        FileDialogCallback callback)
+{
+    g_file_browser.Open(FileBrowser::OpenFile, filters, nfilters,
+                        default_location, std::move(callback));
+}
+
+void ShowSaveFileDialog(const SDL_DialogFileFilter *filters, int nfilters,
+                        const char *default_location,
+                        FileDialogCallback callback)
+{
+    g_file_browser.Open(FileBrowser::SaveFile, filters, nfilters,
+                        default_location, std::move(callback));
+}
+
+void ShowOpenFolderDialog(const char *default_location,
+                          FileDialogCallback callback)
+{
+    g_file_browser.Open(FileBrowser::OpenFolder, nullptr, 0, default_location,
+                        std::move(callback));
+}
+#else
 void ShowOpenFileDialog(const SDL_DialogFileFilter *filters, int nfilters,
                         const char *default_location,
                         FileDialogCallback callback)
@@ -109,3 +139,4 @@ void ShowOpenFolderDialog(const char *default_location,
     SDL_ShowOpenFolderDialog(FileDialogCallbackWrapper, cb,
                              xemu_get_window(), default_location, false);
 }
+#endif /* XEMU_UWP */
