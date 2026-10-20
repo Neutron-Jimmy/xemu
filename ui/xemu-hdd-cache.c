@@ -30,6 +30,7 @@
 #include "system/blockdev.h"
 #include "system/block-backend.h"
 #include "system/reset.h"
+#include "system/system.h"
 #include "xemu-settings.h"
 #include "xemu-hdd-cache.h"
 
@@ -139,7 +140,23 @@ static void clear_cache_on_reset(void *opaque)
     fprintf(stderr, "hdd cache: cleared %d of 3 cache partitions\n", done);
 }
 
+/*
+ * qemu_register_reset needs QOM (the reset list is an object), which is not up
+ * yet when xemu builds its command line -- calling it there tripped an
+ * uninitialized-mutex assertion at launch. Machine-init-done notifiers are a
+ * plain list, safe to join that early, and they run just before the machine's
+ * first qemu_system_reset (qdev_machine_creation_done), so the handler still
+ * runs at the very first power-on.
+ */
+static void register_on_machine_ready(Notifier *n, void *data)
+{
+    (void)n, (void)data;
+    qemu_register_reset(clear_cache_on_reset, NULL);
+}
+
+static Notifier machine_ready = { .notify = register_on_machine_ready };
+
 void xemu_hdd_cache_init(void)
 {
-    qemu_register_reset(clear_cache_on_reset, NULL);
+    qemu_add_machine_init_done_notifier(&machine_ready);
 }
