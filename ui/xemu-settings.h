@@ -63,6 +63,10 @@ bool xemu_settings_load(void);
 // Save config file to disk
 void xemu_settings_save(void);
 
+// Save config file to disk if it changed since the last such save (atomic
+// replace); returns true if it wrote. For platforms where atexit never runs.
+bool xemu_settings_save_if_changed(void);
+
 static inline void xemu_settings_set_string(const char **str, const char *new_str)
 {
     assert(new_str);

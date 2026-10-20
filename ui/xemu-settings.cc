@@ -208,6 +208,62 @@ bool xemu_settings_load(void)
     return success;
 }
 
+// The config as it would be written, as TOML
+static std::string settings_toml(void)
+{
+    char *previous_numeric_locale = setlocale(LC_NUMERIC, NULL);
+    if (previous_numeric_locale) {
+        previous_numeric_locale = g_strdup(previous_numeric_locale);
+    }
+
+    /* Ensure numeric values are printed with '.' radix, no grouping */
+    setlocale(LC_NUMERIC, "C");
+
+    // The global controller vibration setting is replaced with a per-controller config.
+    // xemu_settings_load_gamepad_mapping should have migrated that setting to any connected
+    // controller, so we can set it to true (default) now to remove it from the user config.
+    g_config.input.allow_vibration = true;
+
+    config_tree.update_from_struct(&g_config);
+    std::string toml = config_tree.generate_delta_toml();
+
+    if (previous_numeric_locale) {
+        setlocale(LC_NUMERIC, previous_numeric_locale);
+        g_free(previous_numeric_locale);
+    }
+    return toml;
+}
+
+static std::string last_saved_toml;
+static bool saved_once;
+
+// Write the config only if it differs from what was last written. The
+// file is replaced atomically (written aside, then renamed over), so a
+// process killed mid-write leaves the old config, not half of the new one.
+//
+// The UWP (Xbox) build calls this about once a second from the HUD: a UWP
+// app is ended by the system (from the guide, from Device Portal, or after
+// a suspend) without atexit handlers running, so xemu_settings_save at exit
+// alone never saved anything there.
+bool xemu_settings_save_if_changed(void)
+{
+    std::string toml = settings_toml();
+    if (saved_once && toml == last_saved_toml) {
+        return false;
+    }
+    GError *err = NULL;
+    if (!g_file_set_contents(xemu_settings_get_path(), toml.c_str(),
+                             (gssize)toml.size(), &err)) {
+        fprintf(stderr, "Failed to write config file: %s\n",
+                err ? err->message : "unknown error");
+        g_clear_error(&err);
+        return false;
+    }
+    last_saved_toml = toml;
+    saved_once = true;
+    return true;
+}
+
 void xemu_settings_save(void)
 {
     FILE *fd = qemu_fopen(xemu_settings_get_path(), "wb");

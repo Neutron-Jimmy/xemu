@@ -321,6 +321,16 @@ void xemu_hud_update(void)
     g_snapshot_mgr.Draw();
 #ifdef XEMU_UWP
     g_file_browser.Draw();  // the dialogs, in-app: no native ones on the Xbox
+
+    // The console ends a UWP app without running atexit, where xemu normally
+    // saves its settings: write them as they change instead.
+    static uint32_t last_settings_check;
+    if (now - last_settings_check >= 1000) {
+        last_settings_check = now;
+        if (xemu_settings_save_if_changed()) {
+            fprintf(stderr, "uwp: settings saved\n");
+        }
+    }
 #endif
 
     // static bool show_demo = true;
