@@ -797,6 +797,8 @@ void MainMenuDisplayView::Draw()
            "Show main menu bar when mouse is activated");
     Toggle("Show notifications", &g_config.display.ui.show_notifications,
            "Display notifications in upper-right corner");
+    Toggle("Show FPS", &g_config.display.ui.show_fps,
+           "Display the emulated frame rate in the upper-left corner");
     Toggle("Hide mouse cursor", &g_config.display.ui.hide_cursor,
            "Hide the mouse cursor when it is not moving");
 

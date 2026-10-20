@@ -52,6 +52,9 @@
 #include "compat.hh"
 #include "ui/xemu-uwp.h"
 #include "file-browser.hh"
+extern "C" {
+#include "qemu/timer.h"
+}
 #if defined(_WIN32)
 #include "update.hh"
 #endif
@@ -191,6 +194,32 @@ void xemu_hud_set_framebuffer_texture(GLuint tex, bool flip)
     g_flip_req = flip;
 }
 
+// Settings -> Display -> Show FPS: the guest's frame rate (what the Debug ->
+// Video window graphs, sampled every 250 ms by nv2a_profile_increment), in
+// the upper-left corner. The sample only changes when the guest flips, so it
+// reads 0 once no frame has come for a second (paused, loading) rather than
+// freezing on its last value.
+static void DrawFpsOverlay(void)
+{
+    unsigned int fps = g_nv2a_stats.increment_fps;
+    int64_t now_us = qemu_clock_get_us(QEMU_CLOCK_REALTIME);
+    if (!runstate_is_running() ||
+        now_us - g_nv2a_stats.last_flip_time > 1000000) {
+        fps = 0;
+    }
+    char text[32];
+    snprintf(text, sizeof text, "FPS %u", fps);
+
+    ImDrawList *dl = ImGui::GetForegroundDrawList();
+    float scale = g_viewport_mgr.m_scale;
+    ImVec2 pad(6 * scale, 3 * scale);
+    ImVec2 pos(10 * scale, 10 * scale + g_main_menu_height);
+    ImVec2 ts = ImGui::CalcTextSize(text);
+    dl->AddRectFilled(pos, ImVec2(pos.x + ts.x + 2 * pad.x, pos.y + ts.y + 2 * pad.y),
+                      IM_COL32(0, 0, 0, 160), 4 * scale);
+    dl->AddText(ImVec2(pos.x + pad.x, pos.y + pad.y), IM_COL32(255, 255, 255, 230), text);
+}
+
 void xemu_hud_update(void)
 {
     ImGuiIO& io = ImGui::GetIO();
@@ -319,6 +348,9 @@ void xemu_hud_update(void)
     g_scene_mgr.Draw();
     if (!first_boot_window.is_open) notification_manager.Draw();
     g_snapshot_mgr.Draw();
+    if (g_config.display.ui.show_fps && !g_scene_mgr.IsDisplayingScene()) {
+        DrawFpsOverlay();
+    }
 #ifdef XEMU_UWP
     g_file_browser.Draw();  // the dialogs, in-app: no native ones on the Xbox
 
