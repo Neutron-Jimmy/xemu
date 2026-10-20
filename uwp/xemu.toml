@@ -1,0 +1,30 @@
+# xemu.toml for the Xbox (UWP) build -- copied to the app's LocalState by tools/xdeploy.sh xemu put-config.
+# LOCALSTATE is replaced by the real LocalState path (the console's: Q:\Users\UserMgr1\AppData\Local\Packages\
+# XemuUWP.Xemu_<id>\LocalState). The files themselves go there with tools/xdeploy.sh xemu put SRC NAME.
+
+[general]
+show_welcome = false
+skip_boot_anim = false
+
+[general.updates]
+check = false
+
+[display]
+renderer = 'OPENGL'
+
+[display.window]
+startup_size = '1280x720'
+vsync = true
+
+[display.ui]
+show_menubar = false
+
+[sys]
+mem_limit = '64'
+
+[sys.files]
+bootrom_path = 'LOCALSTATE\mcpx_1.0.bin'
+flashrom_path = 'LOCALSTATE\bios.bin'
+eeprom_path = 'LOCALSTATE\eeprom.bin'
+hdd_path = 'LOCALSTATE\xbox_hdd.qcow2'
+dvd_path = ''

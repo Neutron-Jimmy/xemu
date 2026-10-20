@@ -1,0 +1,3 @@
+# the scripts run in WSL from this Windows checkout: keep them LF even with core.autocrlf
+*.sh text eol=lf
+*.py text eol=lf
