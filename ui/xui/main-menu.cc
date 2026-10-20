@@ -1552,6 +1552,10 @@ void MainMenuSystemView::Draw()
         m_dirty = true;
     }
 
+    // Read at every power-on and reset (ui/xemu-hdd-cache.c): no restart needed
+    Toggle("Clear game cache at startup", &g_config.sys.clear_cache_on_boot,
+           "Prevents dirty/damaged disc errors after xemu is closed mid-game");
+
     SectionTitle("Files");
     FilePicker("MCPX Boot ROM", g_config.sys.files.bootrom_path,
                rom_file_filters, 3, false, [this](const char *path) {

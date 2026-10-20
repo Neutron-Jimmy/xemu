@@ -144,6 +144,7 @@
 #include "qemu/keyval.h"
 
 #include "ui/xemu-settings.h"
+#include "ui/xemu-hdd-cache.h"
 #include "ui/xemu-notifications.h"
 #include "ui/xemu-net.h"
 #include "ui/xemu-input.h"
@@ -3093,6 +3094,9 @@ void qemu_init(int argc, char **argv)
     fake_argv[fake_argc++] = g_strdup_printf("index=1,media=cdrom,file=%s",
         escaped_dvd_path);
     free(escaped_dvd_path);
+
+    /* format the HDD's cache partitions at each power-on and reset, if set */
+    xemu_hdd_cache_init();
 
     fake_argv[fake_argc++] = strdup("-display");
     fake_argv[fake_argc++] = strdup("xemu");

@@ -362,6 +362,9 @@ sys:
     type: enum
     values: [scart, hdtv, vga, rfu, svideo, composite, none]
     default: hdtv
+  clear_cache_on_boot:
+    type: bool
+    default: true
   files:
     bootrom_path: string
     flashrom_path: string
