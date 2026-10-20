@@ -150,7 +150,7 @@ void xemu_hud_init(SDL_Window* window, void* sdl_gl_context)
     ImGui_ImplOpenGL3_Init("#version 150");
     ImPlot::CreateContext();
 
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(XEMU_UWP)  /* the UWP build is updated from its own releases */
     if (!g_config.general.show_welcome && g_config.general.updates.check) {
         update_window.CheckForUpdates();
     }
@@ -313,7 +313,7 @@ void xemu_hud_update(void)
     apu_window.Draw();
     video_window.Draw();
     compatibility_reporter_window.Draw();
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(XEMU_UWP)  /* the UWP build is updated from its own releases */
     update_window.Draw();
 #endif
     g_scene_mgr.Draw();

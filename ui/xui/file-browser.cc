@@ -357,8 +357,9 @@ void FileBrowser::Draw()
     };
     if (at_top) {
         for (auto &loc : m_locations) {
-            std::string label = std::string(ICON_FA_FOLDER "  ") + loc.first +
-                                "###" + loc.second;
+            // No icon glyphs: the popup draws in ImGui's default font, which
+            // has none (they came out as "?"). Folders end in a backslash.
+            std::string label = loc.first + "###" + loc.second;
             if (ImGui::Selectable(label.c_str())) {
                 chosen = loc.second;
                 chosen_dir = true;
@@ -367,7 +368,7 @@ void FileBrowser::Draw()
             shown++;
         }
     } else {
-        if (ImGui::Selectable(ICON_FA_FOLDER "  ..")) {
+        if (ImGui::Selectable("..\\  (up)")) {
             chosen = "..";
             chosen_dir = true;
         }
@@ -377,9 +378,7 @@ void FileBrowser::Draw()
             if (!e.dir && !Matches(e.name)) {
                 continue;
             }
-            std::string label = std::string(e.dir ? ICON_FA_FOLDER "  " :
-                                                    ICON_FA_FILE "  ") +
-                                e.name + "###" + e.name;
+            std::string label = e.name + (e.dir ? "\\" : "") + "###" + e.name;
             if (ImGui::Selectable(label.c_str())) {
                 chosen = e.name;
                 chosen_dir = e.dir;

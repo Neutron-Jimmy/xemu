@@ -236,7 +236,7 @@ void ShowMainMenu()
 
             ImGui::MenuItem("Report Compatibility...", NULL,
                             &compatibility_reporter_window.is_open);
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(XEMU_UWP)  /* the UWP build is updated from its own releases */
             ImGui::MenuItem("Check for Updates...", NULL, &update_window.is_open);
 #endif
 

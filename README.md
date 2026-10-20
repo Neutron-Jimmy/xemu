@@ -56,7 +56,8 @@ It opens on a **Locations** page:
 - **Audio may be silent.** If the app container won't open WASAPI, SDL falls back to its dummy driver.
 - **Performance hasn't been tuned.** Frames are read back from the GPU and re-presented through D3D11.
 - The Xbox button doesn't open xemu's menu; use **View + Menu**.
-- xemu's update checker and anything that opens a web page don't apply on the console.
+- xemu's built-in updater is disabled: it would fetch upstream's desktop build. New versions of this port come
+  from [Releases](../../releases). Links that open a web page don't work on the console.
 
 ## How it works
 

@@ -53,7 +53,7 @@ void MainMenuTabView::Draw()
 
 void MainMenuGeneralView::Draw()
 {
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(XEMU_UWP)  /* the UWP build is updated from its own releases */
     SectionTitle("Updates");
     Toggle("Check for updates", &g_config.general.updates.check,
            "Check for updates whenever xemu is opened");
