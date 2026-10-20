@@ -76,6 +76,10 @@ tools/xdeploy.sh xemu launch
 tools/xdeploy.sh xemu get xemu.log
 ```
 
+For a downloadable release, run `tools/release.sh` after the ninja build. It stages and packages the build, then
+writes `build/release/Xemu-UWP-<version>.zip` (the `.msix`, the `.cer` and `INSTALL.txt`, never the signing
+key). Configure strips the builder's home directory out of the source paths compiled into the binary.
+
 The scripts expect the Windows SDK at `/mnt/e/Windows Kits/10` (set `XEMU_WINKITS`) and Device Portal at
 `https://192.168.1.91:11443` (set `XBOX`), with portal authentication off.
 
